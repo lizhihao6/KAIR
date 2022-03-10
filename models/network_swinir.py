@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
+from DiffJPEG.DiffJPEG import DiffJPEG
 
 
 class Mlp(nn.Module):
@@ -762,6 +763,7 @@ class SwinIR(nn.Module):
             self.conv_last = nn.Conv2d(embed_dim, num_out_ch, 3, 1, 1)
 
         self.apply(self._init_weights)
+        # self.diff_jpeg = DiffJPEG()
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
@@ -836,7 +838,9 @@ class SwinIR(nn.Module):
 
         x = x / self.img_range + self.mean
 
-        return x[:, :, :H*self.upscale, :W*self.upscale]
+        x = x[:, :, :H*self.upscale, :W*self.upscale]
+        # x = self.diff_jpeg(x)
+        return x
 
     def flops(self):
         flops = 0

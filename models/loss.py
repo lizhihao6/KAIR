@@ -285,3 +285,21 @@ def gradient_penalty_loss(discriminator, real_data, fake_data, weight=None):
         gradients_penalty /= torch.mean(weight)
 
     return gradients_penalty
+
+
+# --------------------------------------------
+# JPEG Comp L1 loss
+# --------------------------------------------
+from DiffJPEG import DiffJPEG
+class JPEGL1Loss(nn.Module):
+    """JPEG Loss (L1)"""
+
+    def __init__(self, quality=99):
+        super(JPEGL1Loss, self).__init__()
+        self.jpeg = DiffJPEG(quality=quality)
+        self.l1 = nn.L1Loss()
+
+
+    def forward(self, x, y):
+        x = self.jpeg(x)
+        return self.l1(x, y)

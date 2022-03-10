@@ -160,7 +160,7 @@ class ModelBase():
             state_dict = torch.load(load_path)
             if param_key in state_dict.keys():
                 state_dict = state_dict[param_key]
-            network.load_state_dict(state_dict, strict=strict)
+            network.load_state_dict(state_dict, strict=False)
         else:
             state_dict_old = torch.load(load_path)
             if param_key in state_dict_old.keys():
