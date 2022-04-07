@@ -12,16 +12,16 @@ https://codalab.lisn.upsaclay.fr/competitions/1990#results
 
 Training
 ----------
-'''bash
+``` bash
 pip install -r requirement.txt
 ./train.sh
-'''
+```
 
 Submit
 ----------
-'''bash
+``` bash
 python main_test_tisr.py --package
-'''
+```
 
 References
 ----------
