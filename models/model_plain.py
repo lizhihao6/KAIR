@@ -6,7 +6,7 @@ from torch.optim import Adam
 
 from models.select_network import define_G
 from models.model_base import ModelBase
-from models.loss import CharbonnierLoss, JPEGL1Loss
+from models.loss import CharbonnierLoss, JPEGL1Loss, PSNRLoss
 from models.loss_ssim import SSIMLoss
 
 from utils.utils_model import test_mode
@@ -99,6 +99,8 @@ class ModelPlain(ModelBase):
             self.G_lossfn = CharbonnierLoss(self.opt_train['G_charbonnier_eps']).to(self.device)
         elif G_lossfn_type == 'jpegl1':
             self.G_lossfn = JPEGL1Loss(self.opt_train['jpegl1_quality']).to(self.device)
+        elif G_lossfn_type == 'psnr':
+            self.G_lossfn = PSNRLoss().to(self.device)
         else:
             raise NotImplementedError('Loss type [{:s}] is not found.'.format(G_lossfn_type))
         self.G_lossfn_weight = self.opt_train['G_lossfn_weight']
@@ -150,7 +152,7 @@ class ModelPlain(ModelBase):
     def optimize_parameters(self, current_step):
         self.G_optimizer.zero_grad()
         self.netG_forward()
-        G_loss = self.G_lossfn_weight * self.G_lossfn(self.E, self.H)
+        G_loss = self.G_lossfn_weight * self.G_lossfn(self.E.mean(1), self.H.mean(1))
         G_loss.backward()
 
         # ------------------------------------

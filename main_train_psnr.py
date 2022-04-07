@@ -229,8 +229,8 @@ def main(json_path='options/train_msrresnet_psnr.json'):
                     model.test()
 
                     visuals = model.current_visuals()
-                    E_img = util.tensor2uint(visuals['E'])
-                    H_img = util.tensor2uint(visuals['H'])
+                    E_img = util.tensor2uint(visuals['E'].mean(0))
+                    H_img = util.tensor2uint(visuals['H'].mean(0))
 
                     # -----------------------
                     # save estimated image E

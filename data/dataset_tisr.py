@@ -4,7 +4,7 @@ import torch.utils.data as data
 import utils.utils_image as util
 import cv2
 import numpy as np
-
+import random
 
 class DatasetTISR(data.Dataset):
     '''
@@ -75,8 +75,10 @@ class DatasetTISR(data.Dataset):
             # --------------------------------
             # randomly crop the L patch
             # --------------------------------
-            rnd_h = random.randint(0, max(0, H - self.L_size))
-            rnd_w = random.randint(0, max(0, W - self.L_size))
+            rnd_h = random.randint(0, max(0, H - self.L_size)//2)
+            rnd_w = random.randint(0, max(0, W - self.L_size)//2)
+            rnd_h *= 2
+            rnd_w *= 2
             img_L = img_L[rnd_h:rnd_h + self.L_size, rnd_w:rnd_w + self.L_size, :]
 
             # --------------------------------

@@ -60,23 +60,43 @@ def main():
                                        'Just used to differentiate two different settings in Table 2 of the paper. '
                                        'Images are NOT tested patch by patch.')
     parser.add_argument('--large_model', action='store_true', help='use large model, only provided for real image sr')
-    parser.add_argument('--model_path', type=str,
-                        default='superresolution/swinir_sr_tisr_patch64_x4/models/7000_G.pth')
+    parser.add_argument('--model_path', type=str)
     parser.add_argument('--tile', type=int, default=None, help='Tile size, None for no tile during testing (testing as a whole)')
     parser.add_argument('--tile_overlap', type=int, default=32, help='Overlapping of different tiles')
     parser.add_argument('--package', action='store_true', help='zip the package')
     args = parser.parse_args()
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # set up model
-    if os.path.exists(args.model_path):
-        print(f'loading model from {args.model_path}')
-    else:
-        raise NotImplementedError
         
+    model_list = []
+    
+    args.model_path = 'superresolution/swinir_sr_tisr_patch64_x4_large_patch/models/1000_G.pth'
+    args.training_patch_size = 120
     model = define_model(args)
     model.eval()
     model = model.to(device)
+    model_list.append(model)
+
+    args.model_path = 'superresolution/swinir_sr_tisr_patch64_x4_large_patch/models/18000_G.pth'
+    args.training_patch_size = 120
+    model = define_model(args)
+    model.eval()
+    model = model.to(device)
+    model_list.append(model)
+
+    args.model_path = 'superresolution/swinir_sr_tisr_patch64_x4_large_patch_l2/models/4000_G.pth'
+    args.training_patch_size = 120
+    model = define_model(args)
+    model.eval()
+    model = model.to(device)
+    model_list.append(model)
+
+    args.model_path = 'superresolution/swinir_sr_tisr_patch64_x4_large_patch_psnr/models/4000_G.pth'
+    args.training_patch_size = 120
+    model = define_model(args)
+    model.eval()
+    model = model.to(device)
+    model_list.append(model)
 
     # setup folder and path
     folder, save_dir, border, window_size = setup(args)
@@ -97,13 +117,14 @@ def main():
             w_pad = (w_old // window_size + 1) * window_size - w_old
             img_lq = torch.cat([img_lq, torch.flip(img_lq, [2])], 2)[:, :, :h_old + h_pad, :]
             img_lq = torch.cat([img_lq, torch.flip(img_lq, [3])], 3)[:, :, :, :w_old + w_pad]
-            output = test(img_lq, model, args, window_size)
+            output = test(img_lq, model_list, args, window_size)
             output = output[..., :h_old * args.scale, :w_old * args.scale]
 
         # save image
         output = output.data.squeeze().float().cpu().clamp_(0, 1).numpy()
         if output.ndim == 3:
             output = np.transpose(output[[2, 1, 0], :, :], (1, 2, 0))  # CHW-RGB to HCW-BGR
+        output = np.mean(output, axis=2, keepdims=True)
         output = (output * 255.0).round().astype(np.uint8)  # float32 to uint8
         cv2.imwrite(f'{save_dir}/{imgname}_SwinIR.png', output)
     
@@ -170,16 +191,20 @@ def get_image_pair(args, path):
     return imgname, img_lq, img_gt
 
 
-def test(img_lq, model, args, window_size):
+def test(img_lq, model_list, args, window_size):
     if args.tile is None:
         # test the image as a whole
-        output = model(img_lq.clone())
-        for i in range(1, 8):
-            _img_lq = augment_img_tensor4(img_lq.clone(), mode=i)
-            _output = model(_img_lq)
-            _output = inv_augment_img_tensor4(_output, mode=i)
-            output += _output
+        h, w = img_lq.shape[2:]
+        output = torch.zeros(1, 3, h * 4, w * 4).cuda()
+        for model in model_list:
+            output += model(img_lq.clone())
+            for i in range(1, 8):
+                _img_lq = augment_img_tensor4(img_lq.clone(), mode=i)
+                _output = model(_img_lq)
+                _output = inv_augment_img_tensor4(_output, mode=i)
+                output += _output
         output /= 8
+        output /= len(model_list)
     else:
         raise NotImplementedError
 

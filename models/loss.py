@@ -303,3 +303,17 @@ class JPEGL1Loss(nn.Module):
     def forward(self, x, y):
         x = self.jpeg(x)
         return self.l1(x, y)
+
+import numpy as np
+class PSNRLoss(nn.Module):
+    """JPEG Loss (L1)"""
+
+    def __init__(self):
+        super(PSNRLoss, self).__init__()
+        self.mse = nn.MSELoss()
+
+
+    def forward(self, x, y):
+        mse = self.mse(x, y)
+        psnr = 10 * torch.log10(1 / mse)
+        return -0.5*psnr
